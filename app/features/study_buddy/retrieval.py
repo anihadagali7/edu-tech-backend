@@ -5,9 +5,12 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from typing import Any, Optional, Protocol
+from uuid import UUID
 
 from pydantic import ValidationError
+from sqlalchemy import select
 
+from app.db.models import Question
 from app.features.study_buddy.schemas import ContextSnapshot, StudyMode
 
 
@@ -160,6 +163,35 @@ async def resolve_context(
 
     if session_entity and getattr(session_entity, "linked_quiz_session_id", None):
         quiz_items.append({"quiz_session_id": str(session_entity.linked_quiz_session_id)})
+
+    # Fetch question content if question_id is present
+    question_id = snapshot.question_id if snapshot else None
+    if question_id and repository:
+        try:
+            # Get the session from repository to query Question
+            db_session = getattr(repository, "_session", None)
+            if db_session:
+                try:
+                    question_uuid = UUID(question_id) if isinstance(question_id, str) else question_id
+                    stmt = select(Question).where(Question.id == question_uuid)
+                    result = await db_session.execute(stmt)
+                    question = result.scalar_one_or_none()
+                    if question:
+                        # Format question stem with body and choices for the prompt
+                        choices_text = "\n".join([f"{key}: {value}" for key, value in sorted(question.choices.items())])
+                        question_stem = f"Question: {question.body}\n\nChoices:\n{choices_text}"
+                        learner_state["question_stem"] = question_stem
+                        learner_state["question_body"] = question.body
+                        learner_state["question_choices"] = question.choices
+                except (ValueError, TypeError):
+                    # Invalid UUID format, skip question fetch
+                    pass
+                except Exception as e:
+                    # Other errors fetching question - log but don't fail
+                    import logging
+                    logging.getLogger("study_buddy.retrieval").warning(f"Failed to fetch question {question_id}: {e}")
+        except Exception:  # pragma: no cover - defensive
+            pass
 
     fetch_messages = getattr(repository, "recent_messages_for_session", None)
     if callable(fetch_messages):

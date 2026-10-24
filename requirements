@@ -7,6 +7,7 @@ gunicorn~=22.0
 sqlalchemy~=2.0
 psycopg[binary]~=3.2
 alembic~=1.13
+greenlet  # Required for async SQLAlchemy operations
 
 # Validation & settings
 pydantic~=2.8

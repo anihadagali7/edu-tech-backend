@@ -214,7 +214,7 @@ class StudySession(Base):
     user_clerk_id: Mapped[str] = mapped_column(sa.Text, nullable=False, index=True)
     topic_id: Mapped[_uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("topics.id", ondelete="SET NULL"))
     material_id: Mapped[_uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("learning_materials.id", ondelete="SET NULL"))
-    linked_quiz_session_id: Mapped[_uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("sessions.id", ondelete="SET NULL"))
+    linked_quiz_session_id: Mapped[str | None] = mapped_column(sa.Text, ForeignKey("sessions.session_uid", ondelete="SET NULL"))
 
     mode: Mapped[str] = mapped_column(
         StudySessionModeEnum,

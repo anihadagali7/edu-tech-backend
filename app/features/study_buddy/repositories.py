@@ -10,6 +10,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import models_study
+from app.db.models import Session  # Import Session model to look up by session_uid
 from app.features.study_buddy.schemas import ContextSnapshot, StudyMessageResponse
 from app.utils.errors import AppError, STB404_SESSION_NOT_FOUND, STB422_ANALYTICS_EVENT_TYPE_REQUIRED
 
@@ -73,14 +74,29 @@ class StudyBuddyRepository:
 
         topic_uuid = self._optional_uuid(context_dict.get("topic_id"))
         material_uuid = self._optional_uuid(context_dict.get("learning_material_id"))
-        quiz_uuid = self._optional_uuid(context_dict.get("session_id"))
+        
+        # Handle session_id: it should be a session_uid (string) that we store directly
+        # linked_quiz_session_id now stores session_uid (TEXT) directly, not UUID id
+        session_id_value = context_dict.get("session_id") or context_dict.get("quiz_id")
+        quiz_session_uid = None
+        if session_id_value:
+            # linked_quiz_session_id now stores session_uid directly (TEXT)
+            # Normalize the session_uid by removing hyphens for consistency
+            quiz_session_uid = str(session_id_value).replace("-", "")
+            # Optionally verify the session_uid exists in the database
+            stmt = select(Session).where(Session.session_uid == quiz_session_uid)
+            result = await self._session.execute(stmt)
+            session_row = result.scalar_one_or_none()
+            if session_row is None:
+                # If the session_uid doesn't exist, set to None to avoid foreign key violations
+                quiz_session_uid = None
 
         if topic_uuid is not None:
             session_kwargs["topic_id"] = topic_uuid
         if material_uuid is not None:
             session_kwargs["material_id"] = material_uuid
-        if quiz_uuid is not None:
-            session_kwargs["linked_quiz_session_id"] = quiz_uuid
+        if quiz_session_uid is not None:
+            session_kwargs["linked_quiz_session_id"] = quiz_session_uid
 
         session_kwargs["context_snapshot"] = context_dict or None
 
@@ -179,7 +195,12 @@ class StudyBuddyRepository:
 
         session_entity.topic_id = self._optional_uuid(context_payload.get("topic_id"))
         session_entity.material_id = self._optional_uuid(context_payload.get("learning_material_id"))
-        session_entity.linked_quiz_session_id = self._optional_uuid(context_payload.get("session_id"))
+        # linked_quiz_session_id now stores session_uid (TEXT) directly
+        session_id_value = context_payload.get("session_id") or context_payload.get("quiz_id")
+        if session_id_value:
+            session_entity.linked_quiz_session_id = str(session_id_value).replace("-", "")
+        else:
+            session_entity.linked_quiz_session_id = None
 
         session_entity.updated_at = datetime.now(timezone.utc)
 

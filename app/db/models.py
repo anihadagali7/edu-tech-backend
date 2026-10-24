@@ -72,9 +72,6 @@ class AppUser(Base):
 # Temporary alias to reduce ripple until Stage 4 rewrites
 
 
-# Temporary alias to reduce ripple until Stage 4 rewrites
-
-
 
 class Topic(Base):
     __tablename__ = "topics"

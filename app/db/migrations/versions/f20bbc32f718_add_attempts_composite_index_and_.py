@@ -21,12 +21,11 @@ def upgrade() -> None:
     # Add composite index on (session_id, question_id) for faster idempotency checks
     # This speeds up the duplicate check query in submit_answer
     # The index is the CRITICAL part for performance - this will fix the timeout issue
-    op.create_index(
-        "ix_attempts_session_question",
-        "attempts",
-        ["session_id", "question_id"],
-        unique=False
-    )
+    # Using idempotent CREATE INDEX IF NOT EXISTS to handle existing indexes
+    op.execute("""
+        CREATE INDEX IF NOT EXISTS ix_attempts_session_question 
+        ON attempts (session_id, question_id);
+    """)
     
     # Add unique constraint to prevent duplicate answers at database level
     # NOTE: This may timeout on large tables with many rows. If it times out:
@@ -37,13 +36,25 @@ def upgrade() -> None:
     #
     # For now, we'll skip the unique constraint to avoid migration timeouts.
     # The index alone provides the performance improvement needed.
-    # op.create_unique_constraint(
-    #     "uq_attempts_session_question",
-    #     "attempts",
-    #     ["session_id", "question_id"]
-    # )
+    # op.execute("""
+    #     DO $$ 
+    #     BEGIN
+    #         ALTER TABLE attempts ADD CONSTRAINT uq_attempts_session_question UNIQUE (session_id, question_id);
+    #     EXCEPTION
+    #         WHEN duplicate_table THEN NULL;
+    #     END $$;
+    # """)
 
 
 def downgrade() -> None:
-    op.drop_constraint("uq_attempts_session_question", "attempts", type_="unique")
-    op.drop_index("ix_attempts_session_question", table_name="attempts")
+    # Drop constraint if it exists
+    op.execute("""
+        DO $$ 
+        BEGIN
+            ALTER TABLE attempts DROP CONSTRAINT IF EXISTS uq_attempts_session_question;
+        EXCEPTION
+            WHEN undefined_object THEN NULL;
+        END $$;
+    """)
+    # Drop index if it exists
+    op.execute("DROP INDEX IF EXISTS ix_attempts_session_question;")
