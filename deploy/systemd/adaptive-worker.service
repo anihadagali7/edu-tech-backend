@@ -1,0 +1,22 @@
+[Unit]
+Description=Adaptive Quiz Worker (cron-style loop)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=adaptive
+Group=adaptive
+EnvironmentFile=/etc/adaptive/env
+WorkingDirectory=/opt/adaptive
+ExecStart=/opt/adaptive/venv/bin/python -m app.features.llm.worker
+Restart=always
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target

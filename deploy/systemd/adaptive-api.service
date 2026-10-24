@@ -1,0 +1,26 @@
+[Unit]
+Description=Adaptive Quiz API (Gunicorn + Uvicorn)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Create this user or adjust accordingly
+User=adaptive
+Group=adaptive
+EnvironmentFile=/etc/adaptive/env
+WorkingDirectory=/opt/adaptive
+# Gunicorn with uvicorn workers
+ExecStart=/opt/adaptive/venv/bin/gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 127.0.0.1:8000 --workers 2 --access-logfile - --error-logfile -
+Restart=on-failure
+RestartSec=5
+# Hardening (adjust as needed)
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+# Pass request-id downstream
+Environment="PYTHONUNBUFFERED=1"
+
+[Install]
+WantedBy=multi-user.target

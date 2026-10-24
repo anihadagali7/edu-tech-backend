@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Adaptive Quiz Worker every 2 minutes
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=120s
+AccuracySec=30s
+Unit=adaptive-worker.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
