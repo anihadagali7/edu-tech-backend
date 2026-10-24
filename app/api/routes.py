@@ -14,7 +14,6 @@ from app.features.topics import router as topics_router
 from app.features.llm.jobs import router as llm_jobs_router
 from app.features.admin.reporting import router as admin_reporting_router  # NEW
 from app.features.profile import router as profile_router
-from app.features.dev_routes import router as dev_router  # DEV ONLY
 from app.features.learning_content.router import router as learning_content_router
 from app.api.routes_study_buddy import include_study_buddy_routes
 
@@ -30,7 +29,6 @@ api.include_router(llm_jobs_router)
 api.include_router(admin_reporting_router)  # NEW
 api.include_router(profile_router)
 api.include_router(learning_content_router, prefix="/learning-content")
-api.include_router(dev_router)  # DEV ONLY - Remove in production
 include_study_buddy_routes(api)
 
 

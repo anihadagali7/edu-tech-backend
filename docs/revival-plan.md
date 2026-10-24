@@ -17,9 +17,9 @@ Neither repo needs any of this. Removing it first makes the later diffs smaller.
 
 **UI**
 
-- [ ] Delete `amplify.yml`, `Dockerfile`, `ecs-task-definition.json`, `DEPLOYMENT.md`, `prisma/` and `postcss.config.mjs` (a duplicate of `postcss.config.js`).
-- [ ] Remove the unused packages: `npm uninstall @auth/prisma-adapter @prisma/client prisma next-auth bcryptjs @types/bcryptjs`. Also remove the four `db:*` scripts. Nothing in `src/` imports any of them.
-- [ ] Replace `env.example` with the real variables (see [deployment.md](deployment.md#ui-env-vars)).
+- [x] Delete `amplify.yml`, `Dockerfile`, `ecs-task-definition.json`, `DEPLOYMENT.md`, `prisma/` and `postcss.config.mjs` (a duplicate of `postcss.config.js`).
+- [x] Remove the unused packages: `npm uninstall @auth/prisma-adapter @prisma/client prisma next-auth bcryptjs @types/bcryptjs`. Also remove the four `db:*` scripts. Nothing in `src/` imports any of them.
+- [x] Replace `env.example` with the real variables (see [deployment.md](deployment.md#ui-env-vars)).
 
 ## Step 2: Make the API boot on Heroku + Neon
 
@@ -35,7 +35,11 @@ Neither repo needs any of this. Removing it first makes the later diffs smaller.
 | 2h | `/dev/topics-noauth` is mounted in production ("DEV ONLY - Remove in production"). It only lists published topics, so the risk is low, but it is still an unauthenticated route. | `app/api/routes.py` | Delete the route and `app/features/dev_routes.py`. |
 | 2i | With `LLM_PROVIDER` unset, `_call_llm_generate` returns `None`, and every job fails with a confusing validation error. | `app/features/llm/worker.py` | This goes away in step 4. |
 
+**Status (2026-10-24):** 2a–2e, 2g and 2h are done. 2f still needs one run against Neon, and 2i waits for step 4.
+
 Check: `alembic heads` prints one line, `uvicorn app.main:app` starts locally against a Neon branch, and `GET /health` returns `healthy`.
+
+**Test suite:** 106 of 159 tests fail, both before and after step 2, so the failures were already there. The main causes: newer `httpx` dropped `AsyncClient(app=...)` (24 tests; use `ASGITransport`), tests that need a local Postgres on port 5432 (15), and tests written for older function signatures (`org_id`, `topic_uid`, UUID handling). Fixing them is a separate task. Until then, don't treat a red test run as a signal.
 
 ## Step 3: Clerk setup the code expects
 

@@ -43,7 +43,6 @@ pydantic[email]>=2.7,<3
 email-validator
 asyncpg
 types-python-jose
-svix
 # Additional LLM and utility packages
 openai
 langchain-text-splitters

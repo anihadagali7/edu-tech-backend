@@ -31,12 +31,12 @@ import sqlalchemy as sa
 from sqlalchemy import func, select, text as sa_text
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from slugify import slugify
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 
-from app.db.base import get_session
+from app.db.base import SessionLocal, get_session
 from app.db.models import Event, LLMJob, PendingTopic, Question, Topic
 from app.features.llm.schema import LLMTopicArtifact, QuestionArtifact, QuestionUpsertResult
 from app.db.repositories import ImportItem, bulk_upsert_questions
@@ -280,9 +280,6 @@ async def _fail_job(db: AsyncSession, job_id: UUID, *, error: str) -> None:
 
 async def run_once(max_jobs: int = 1) -> int:
     """Process up to `max_jobs` queued jobs. Returns number of jobs processed (success or fail)."""
-    settings = get_settings()
-    async_engine = create_async_engine(settings.DATABASE_URL, future=True, echo=False)
-    SessionLocal: async_sessionmaker[AsyncSession] = async_sessionmaker(bind=async_engine, expire_on_commit=False, class_=AsyncSession)
     processed = 0
     for _ in range(max_jobs):
         async with SessionLocal() as db:

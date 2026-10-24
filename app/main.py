@@ -17,7 +17,6 @@ from fastapi.responses import ORJSONResponse
 import uvicorn
 
 from app.api.routes import api as api_router, OPENAPI_TAGS
-from app.auth.clerk_webhooks import router as webhook_router
 from app.config import Settings, get_settings
 from app.utils.errors import register_exception_handlers
 from app.utils.logging import RequestIDMiddleware, setup_logging
@@ -72,8 +71,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     # Routes (single consolidated API router mounts all features + /me)
     app.include_router(api_router)
-    # Webhooks (separate router)
-    app.include_router(webhook_router)
 
     return app
 

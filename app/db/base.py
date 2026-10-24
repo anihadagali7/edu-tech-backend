@@ -47,6 +47,10 @@ if parsed_url.query:
         connect_args['prepared_statement_cache_size'] = int(query_params['prepared_statement_cache_size'])
     if 'statement_cache_size' in query_params:
         connect_args['statement_cache_size'] = int(query_params['statement_cache_size'])
+    # asyncpg takes `ssl`, libpq/psycopg (Alembic) takes `sslmode`; Neon requires SSL
+    ssl_mode = query_params.get('ssl') or query_params.get('sslmode')
+    if ssl_mode and ssl_mode != 'disable':
+        connect_args['ssl'] = ssl_mode
     
     # Add connection timeout for asyncpg (default 30 seconds)
     # This is the timeout for establishing the initial connection

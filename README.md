@@ -24,9 +24,9 @@ The API for EduTech, an adaptive quiz platform. It serves topics and quizzes who
 
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate
-pip install -r requirements -r requirements-dev    # becomes requirements.txt in revival step 2a
+pip install -r requirements.txt -r requirements-dev
 # create .env (see docs/deployment.md#api-env-vars); point DATABASE_URL at a Neon dev branch
-alembic upgrade head                               # needs revival step 2f (merge heads) first
+alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
